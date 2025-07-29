@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NFC Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2rem; }
+    button { padding: 1rem 2rem; font-size: 1.2rem; }
+    #status { margin-top: 1rem; font-size: 1.1rem; color: green; }
+  </style>
+</head>
+<body>
+  <h1>Tap Your NFC Card</h1>
+  <button id="scanBtn">Start Scan</button>
+  <div id="status"></div>
+
+  <script>
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbznAhsK7yX_npRIHowuukSR9kfj_t2hG89cwM-OVjOk_Y0t5cvASG3h7cgDnD_SBPlZ/exec";
+
+    document.getElementById("scanBtn").addEventListener("click", async () => {
+      const status = document.getElementById("status");
+
+      if (!("NDEFReader" in window)) {
+        status.textContent = "Web NFC not supported in this browser.";
+        return;
+      }
+
+      try {
+        const reader = new NDEFReader();
+        await reader.scan();
+        status.textContent = "Waiting for card...";
+
+        reader.onreading = async (event) => {
+          const uid = event.serialNumber;
+          status.textContent = "Card UID: " + uid;
+
+          const response = await fetch(scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "attendance",
+              name: uid
+            })
+          });
+
+          const result = await response.text();
+          alert(result);
+          status.textContent = result;
+        };
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

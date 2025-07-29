@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NFC Student Registration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2rem; }
+    input, button { padding: 1rem; font-size: 1.1rem; margin-top: 10px; width: 80%; max-width: 400px; }
+    #status { margin-top: 1rem; font-size: 1.1rem; color: green; }
+  </style>
+</head>
+<body>
+  <h1>Register Student with NFC</h1>
+  <input type="text" id="nameInput" placeholder="Enter your name" />
+  <button id="registerBtn">Tap NFC Card</button>
+  <div id="status"></div>
+
+  <script>
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbznAhsK7yX_npRIHowuukSR9kfj_t2hG89cwM-OVjOk_Y0t5cvASG3h7cgDnD_SBPlZ/exec";
+
+    document.getElementById("registerBtn").addEventListener("click", async () => {
+      const name = document.getElementById("nameInput").value.trim();
+      const status = document.getElementById("status");
+
+      if (!name) {
+        alert("Please enter a name.");
+        return;
+      }
+
+      if (!("NDEFReader" in window)) {
+        status.textContent = "Web NFC not supported in this browser.";
+        return;
+      }
+
+      try {
+        const reader = new NDEFReader();
+        await reader.scan();
+        status.textContent = "Waiting for card...";
+
+        reader.onreading = async (event) => {
+          const uid = event.serialNumber;
+          status.textContent = "Card UID: " + uid;
+
+          const response = await fetch(scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "register",
+              name: name,
+              uid: uid
+            })
+          });
+
+          const result = await response.text();
+          alert(result);
+          status.textContent = result;
+        };
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
